@@ -21,6 +21,10 @@ void imageMeshWarpPerspective(const cv::Mat &src, cv::Mat &dst, const cv::Mat &d
     {
         for(int j = 0; j < (primeMesh.cols - 1); ++j)
         {
+            // if(i == 0 && j == 23)
+            // {
+            //     std::cout << "Here" << std::endl;
+            // }
             /*
             Извлучение полигонов (исходного и искаженного) в формате вектора 4х
             вершин по topleft индексу. Исходный cv::Mat содержит все вершины сеток.
@@ -32,8 +36,8 @@ void imageMeshWarpPerspective(const cv::Mat &src, cv::Mat &dst, const cv::Mat &d
             Формирование матрицы перспективного преобразования
             из пространства искаженного полигона в пространство первичного полигона
             */
-            tmp_invTransformMat = cv::getPerspectiveTransform(tmp_warp_poly2f, tmp_prime_poly2f);
-
+            tmp_invTransformMat = cv::getPerspectiveTransform(tmp_warp_poly2f, tmp_prime_poly2f, cv::DecompTypes::DECOMP_SVD);
+            // std::cout << tmp_invTransformMat << std::endl;
             /*
             Получение вектора всех точек, заключенных в искаженном полигоне
             */

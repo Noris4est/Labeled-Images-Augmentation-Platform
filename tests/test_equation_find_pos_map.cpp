@@ -9,6 +9,8 @@
 #include "frame_warp_processing.hpp"
 #include "draw_custom_line.hpp"
 #include "colors.hpp"
+#include "test_equation_find_pos_map.h"
+#include "mesh_grid_nodes_mover_common.hpp"
 
 cv::Scalar red = cv::Scalar(0, 0, 255);
 cv::Scalar blue = cv::Scalar(255, 0, 0);
@@ -23,16 +25,58 @@ cv::Scalar gray = cv::Scalar(128, 128, 128);
 int main(int kargs, char* kwargs[])
 {
     cv::Size workFrameSize = {800, 600};
-    cv::Mat srcMesh, dstMesh;
-    // srcMesh = meshGenerator::creatSqrtWarpMeshFromLeft2Right(dstMesh, cv::Size(600,400), cv::Size(7, 5));
+    cv::Size meshGridSize = {32,32};
+    cv::Size callbackMeshGridSize_x_axis = {16,1};
+    cv::Size callbackMeshGridSize_y_axis = {1,16};
+
+    cv::Mat srcMesh, dstMesh, proxyMesh;
+    // srcMesh = meshGenerator::creatSqrtWarpMeshFromLeft2Right(dstMesh, workFrameSize, cv::Size(14, 8));
     // srcMesh = meshGenerator::creatSqrtWarpMeshFromTopLeft2BottomRight(dstMesh, workFrameSize, cv::Size(7, 7));
     // srcMesh = meshGenerator::createExpansionWarpMeshFromCenter2BordersSquare(dstMesh, cv::Size(600,400), cv::Size(7, 5));
     // srcMesh = meshGenerator::createExpansionWarpMeshFromCenter2BordersCircle(dstMesh, cv::Size(500,500), cv::Size(5, 3));
 //     srcMesh = meshGenerator::createRandomWarpMes(dstMesh, cv::Size(500,500), cv::Size(3, 3));
-    srcMesh = meshGenerator::createDistortionWarpMesh(dstMesh, workFrameSize, cv::Size(7, 7));
+    // srcMesh = meshGenerator::createDistortionWarpMesh(dstMesh, workFrameSize, cv::Size(7, 7));
+    // srcMesh = meshGenerator::createSinWarpMesh_propX_changeY(dstMesh, workFrameSize, cv::Size(25, 5));
+    // srcMesh = meshGenerator::createSinWarpMesh_propY_changeX(dstMesh, workFrameSize, cv::Size(5, 25)); // TODO: разобраться, почему 50 width size падает с ошибкой
+    // srcMesh = meshGenerator::createSinWarpMesh_propXY_changeXY(dstMesh, workFrameSize, cv::Size(12, 12), 0.3, 0.3);
 
+
+    srcMesh = meshGenerator::createPrimeMesh(workFrameSize, meshGridSize);
+    // meshGenerator::createWaveSinWarpMeshDirectionX(srcMesh, proxyMesh, workFrameSize, meshGridSize, callbackMeshGridSize);
+    // meshGenerator::createWaveSinWarpMeshDirectionY(proxyMesh, dstMesh, workFrameSize, meshGridSize, callbackMeshGridSize_y_axis);
+    // meshGenerator::createLongitudinalWaveGammaWarpMeshDistortion(
+    //     srcMesh, 
+    //     dstMesh, 
+    //     workFrameSize, 
+    //     meshGridSize, 
+    //     callbackMeshGridSize_x_axis, 2, mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX, false, true);
+    
+    // meshGenerator::createLongitudinalWaveGammaWarpMeshDistortion(
+    //     dstMesh, 
+    //     dstMesh, 
+    //     workFrameSize, 
+    //     meshGridSize, 
+    //     callbackMeshGridSize_y_axis, 2, mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisY, true, false);
+   
+    // meshGenerator::createLongitudinalWaveSinWarpMeshDistortion(
+    //     srcMesh,
+    //     dstMesh,
+    //     workFrameSize,
+    //     meshGridSize,
+    //     callbackMeshGridSize_x_axis,
+    //     mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
+    //     false,
+    //     true);
+    meshGenerator::createLongitudinalWaveSinFromSourcePointConcentric(
+        srcMesh,
+        dstMesh,
+        workFrameSize,
+        meshGridSize,
+        cv::Point(100,100), 2);
+    
     MeshWarpApplicator wma(srcMesh, dstMesh);
-    cv::Mat srcframe = cv::imread("../data/test_warp_frame_v5.png");
+    // cv::Mat srcframe = cv::imread("../data/test_warp_frame_v5.png");
+    cv::Mat srcframe = cv::imread("../data/test_warp_frame_v3.png");
     cv::resize(srcframe, srcframe, workFrameSize);
     
     cv::Mat srcMeshFrame(workFrameSize, CV_8UC3);
@@ -44,7 +88,7 @@ int main(int kargs, char* kwargs[])
     drawMeshTransform(transformMeshFrame, srcMesh, dstMesh, {0,0,0}, {0,0,0}, {0,0,0}, 5, 5);
 
     drawMesh(transformMeshFrame, srcMesh, colors::blue, true, cv::LineStyles::DASHDOT);
-    drawMesh(transformMeshFrame, dstMesh, colors::red, true, cv::LineStyles::DASHED);
+    // drawMesh(transformMeshFrame, dstMesh, colors::red, true, cv::LineStyles::DASHED);
 
     drawMesh(srcMeshFrame, srcMesh, colors::blue, true, cv::LineStyles::SOLID);
     drawMesh(dstMeshFrame, dstMesh, colors::red, true, cv::LineStyles::SOLID);
@@ -64,7 +108,10 @@ int main(int kargs, char* kwargs[])
     imageMeshWarpAffine(srcframe, warpaffine, dstMesh);
 
     cv::imshow("dst_warpgeomremap", warpgeomremap);
+    std::cout << "warpgeomremap_size=" << warpgeomremap.size() << std::endl;
     cv::imshow("dst_warpperspective", warpperspective);
+    std::cout << "warpperspective_size=" << warpperspective.size() << std::endl;
+
     cv::imshow("dst_warpaffine", warpaffine);
 
     // cv::imwrite("../images_result/warpgeomremap.png", warpgeomremap);

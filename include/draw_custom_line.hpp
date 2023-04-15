@@ -18,7 +18,7 @@ namespace cv{
     void dashdot_line(cv::Mat &img, cv::Point p1, cv::Point p2, const cv::Scalar &color, int thickness, int linetype, int relative_step = 20);
     void dashdot_marker_line(cv::Mat &img, cv::Point p1, cv::Point p2, const cv::Scalar &color, int thickness, int linetype, int relative_step = 20, int markertype = cv::MarkerTypes::MARKER_STAR, int relative_marker_size = 5);
 
-    void line(
+    void line_custom(
         cv::Mat &img, cv::Point p1, cv::Point p2, 
         const cv::Scalar &color, int thickness, int linetype, int linestyle);
     

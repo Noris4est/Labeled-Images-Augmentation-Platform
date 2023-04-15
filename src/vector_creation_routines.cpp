@@ -48,7 +48,11 @@ std::vector<cv::Point> cplt::arange(cv::Point start, cv::Point end, double step)
     int dx = x_end - x_start;
     int dy = y_end - y_start;
     double len = std::sqrt(dx*dx + dy*dy);
-    int num = len / step;
+    int num = len / step + 1;
+    if(num == 1)
+    {
+        num = 2;
+    }
     std::vector<double> x_vec = cplt::linspace(x_start, x_end, num);
     std::vector<double> y_vec = cplt::linspace(y_start, y_end, num);
     std::vector<cv::Point> result;

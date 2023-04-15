@@ -56,6 +56,59 @@ float calculate_relative_delta_EF(const std::vector<cv::Point> &poly, cv::Point 
     return delta;
 }
 
+float calculate_relative_delta_GH_proxy(const std::vector<cv::Point> &poly, cv::Point point0, bool checkvalidpoly = true)
+{
+    if(checkvalidpoly)
+    {
+        assert(poly.size() == 4); // Допустимы исключительно полигоны с 4 вершинами!
+        /*
+            Полигон должен быть выпуклим и не вырожденным в треугольник 
+        */
+       assert(isConvexPolygon(poly, true, false));
+    }
+    
+    cv::Point A = poly[0];
+    cv::Point B = poly[1];
+    cv::Point C = poly[2];
+    cv::Point D = poly[3];
+    int x0 = point0.x;
+    int y0 = point0.y;
+    cv::Vec2i AB, DC;
+    AB = B - A;
+    DC = C - D;
+    int DCx = DC[0];
+    int DCy = DC[1];
+    int ABx = AB[0];
+    int ABy = AB[1];
+
+    long long A_eq = DCy*ABx - DCx*ABy;
+    long long B_eq = ABy * (x0 - D.x) + ABx * (D.y - y0) + DCx * (y0 - A.y) - DCy * (x0 - A.x);
+    long long C_eq = D.x * (y0 - A.y) + D.y * (A.x - x0) - A.x * y0 + A.y * x0;
+    float delta;
+
+    if(A_eq == 0)
+    {
+        delta = -(float) C_eq / B_eq;
+    }
+    else
+    {
+        long long D_eq = B_eq*B_eq - 4*A_eq*C_eq;
+        
+        float x1 = (-B_eq + std::sqrt(D_eq)) / 2.0 / A_eq;
+        float x2 = (-B_eq - std::sqrt(D_eq)) / 2.0 / A_eq;
+        float tolerance = 0.1;
+        if(x1 >= -tolerance && x1 <= 1 + tolerance)
+        {
+            delta = x1;
+        }
+        else
+        {
+            delta = x2;
+        }
+    }
+    return delta;
+}
+
 float calculate_relative_delta_GH(const std::vector<cv::Point> &poly, cv::Point point0, bool checkvalidpoly = true)
 {
     auto poly_rot = poly;
@@ -136,7 +189,11 @@ void MeshWarpApplicator::preprocessing()
 {
     int totalPolygonsCount = meshGridSize.width * meshGridSize.height;
     
-    mapPolygonIds = cv::Mat(framesize, CV_16UC1);
+    //get last element dstMesh - size
+    cv::Point2i dstMesh_br = dstMesh.at<cv::Point2i>(dstMesh.rows - 1, dstMesh.cols - 1); //br = bottom right
+    cv::Size map_poly_size = {dstMesh_br.x + 1, dstMesh_br.y + 1};
+    dst_frame_size = map_poly_size;
+    mapPolygonIds = cv::Mat(map_poly_size, CV_16UC1);
     mapPolygonIds = cv::Scalar(0);
     cv::Point tl, tr, br, bl;
     std::vector<cv::Point> polygon_tmp;
@@ -174,13 +231,13 @@ void MeshWarpApplicator::preprocessing()
     int i_poly, j_poly;
     std::vector<cv::Point> polygon_dst_tmp, polygon_src_tmp;
     cv::Point pSrc;
-    map_x = cv::Mat(framesize, CV_32FC1);
-    map_y = cv::Mat(framesize, CV_32FC1);
+    map_x = cv::Mat(dst_frame_size, CV_32FC1);
+    map_y = cv::Mat(dst_frame_size, CV_32FC1);
     for(int i = 0; i < framesize.height; ++i)
     {
         for(int j = 0; j < framesize.width; ++j)
         {
-            // if(i == 314 && j == 99)
+            // if(i == 100 && j == 375)
             // {
             //     std::cout << "Here!" << std::endl;
             // }
@@ -271,6 +328,7 @@ void MeshWarpApplicator::perprocessing3nodes()
 
 void MeshWarpApplicator::apply(const cv::Mat &src, cv::Mat &dst) const
 {
+
     cv::remap(src, dst, map_x, map_y, cv::InterpolationFlags::INTER_CUBIC);
 }
 

@@ -23,3 +23,6 @@ target_link_libraries(test_mesh_triangle ${OpenCV_LIBS} transform_mappinp_polygo
 
 add_executable(test_triangle_warp tests/test_triangle_warp.cpp)
 target_link_libraries(test_triangle_warp ${OpenCV_LIBS} transform_mappinp_polygon)
+
+add_executable(test_get_perspective_transform_mat tests/test_get_perspective_transform_mat.cpp)
+target_link_libraries(test_get_perspective_transform_mat ${OpenCV_LIBS} transform_mappinp_polygon)

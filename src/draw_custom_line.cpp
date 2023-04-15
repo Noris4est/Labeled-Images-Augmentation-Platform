@@ -4,7 +4,7 @@
 #include "draw_custom_line.hpp"
 
 
-void cv::line(
+void cv::line_custom(
         cv::Mat &img, cv::Point p1, cv::Point p2, 
         const cv::Scalar &color, int thickness, int linetype, int linestyle)
 {

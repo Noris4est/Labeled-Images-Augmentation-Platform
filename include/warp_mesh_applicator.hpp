@@ -21,6 +21,7 @@ private:
     cv::Mat dstMesh;
     cv::Size framesize;
     cv::Size meshGridSize;
+    cv::Size dst_frame_size;
 };
 
 

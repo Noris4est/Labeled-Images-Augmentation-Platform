@@ -222,8 +222,8 @@ void drawMesh(cv::Mat &frame, const cv::Mat &mesh, cv::Scalar color, bool draw_e
                 tmp_cur = mesh.at<cv::Point2i>(i,j);
                 pRight = mesh.at<cv::Point2i>(i, j+1);
                 pBottom = mesh.at<cv::Point2i>(i+1, j);
-                cv::line(frame, tmp_cur, pRight, color, 1, cv::LINE_AA, linestyle);
-                cv::line(frame, tmp_cur, pBottom, color, 1, cv::LINE_AA, linestyle);
+                cv::line_custom(frame, tmp_cur, pRight, color, 1, cv::LINE_AA, linestyle);
+                cv::line_custom(frame, tmp_cur, pBottom, color, 1, cv::LINE_AA, linestyle);
             }
         }   
     }
@@ -257,9 +257,9 @@ void drawMesh3nodes(cv::Mat &frame, const cv::Mat &mesh, cv::Scalar color, bool 
             {
                 extractPolygon3(mesh, tmp_poly, {j, i});
                 p1 = tmp_poly[0]; p2 = tmp_poly[1]; p3 = tmp_poly[2];
-                cv::line(frame, p1, p2, color, 1, cv::LINE_AA, linestyle);
-                cv::line(frame, p2, p3, color, 1, cv::LINE_AA, linestyle);
-                cv::line(frame, p1, p3, color, 1, cv::LINE_AA, linestyle);
+                cv::line_custom(frame, p1, p2, color, 1, cv::LINE_AA, linestyle);
+                cv::line_custom(frame, p2, p3, color, 1, cv::LINE_AA, linestyle);
+                cv::line_custom(frame, p1, p3, color, 1, cv::LINE_AA, linestyle);
             }
         }   
     }
