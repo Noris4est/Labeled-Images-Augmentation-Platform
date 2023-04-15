@@ -41,7 +41,7 @@ int main(int kargs, char* kwargs[])
     // srcMesh = meshGenerator::createSinWarpMesh_propXY_changeXY(dstMesh, workFrameSize, cv::Size(12, 12), 0.3, 0.3);
 
 
-    srcMesh = meshGenerator::createPrimeMesh(workFrameSize, meshGridSize);
+    srcMesh = mesh_generator::createPrimeMesh(workFrameSize, meshGridSize);
     // meshGenerator::createWaveSinWarpMeshDirectionX(srcMesh, proxyMesh, workFrameSize, meshGridSize, callbackMeshGridSize);
     // meshGenerator::createWaveSinWarpMeshDirectionY(proxyMesh, dstMesh, workFrameSize, meshGridSize, callbackMeshGridSize_y_axis);
     // meshGenerator::createLongitudinalWaveGammaWarpMeshDistortion(
@@ -67,12 +67,14 @@ int main(int kargs, char* kwargs[])
     //     mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
     //     false,
     //     true);
-    meshGenerator::createLongitudinalWaveSinFromSourcePointConcentric(
+    mesh_generator::longitudinal::createLongitudinalWaveSinFromSourcePointConcentric(
         srcMesh,
         dstMesh,
         workFrameSize,
         meshGridSize,
-        cv::Point(100,100), 2);
+        cv::Point(300,200), 2); // TODO : разобраться, почему при source_point = {300,300} падает с ошибкой
+        // Судя по всему, нужно смещать граничные ноды тоже, т.к. появляется ошибка именно по выпуклости 
+        // Возможно снизить требования по выпуклости
     
     MeshWarpApplicator wma(srcMesh, dstMesh);
     // cv::Mat srcframe = cv::imread("../data/test_warp_frame_v5.png");

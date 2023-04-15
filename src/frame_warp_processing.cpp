@@ -6,7 +6,7 @@ void imageMeshWarpPerspective(const cv::Mat &src, cv::Mat &dst, const cv::Mat &d
     dst = cv::Mat(getMeshSize(dstWarpMesh), CV_8UC3);
 
     cv::Size meshGridSize = {dstWarpMesh.cols - 1, dstWarpMesh.rows - 1}; 
-    cv::Mat primeMesh = meshGenerator::createPrimeMesh(src.size(), meshGridSize);
+    cv::Mat primeMesh = mesh_generator::createPrimeMesh(src.size(), meshGridSize);
     std::vector<cv::Point2f> tmp_prime_poly2f, tmp_warp_poly2f; // Первичный и искаженный полигоны
     cv::Mat tmp_invTransformMat; // матрица преобразования между 
     std::vector<cv::Point2f> includedPoints2f; // Вектор включенных точек в искаженный полигон
@@ -102,7 +102,7 @@ void imageMeshWarpAffine(const cv::Mat &src, cv::Mat &dst, const cv::Mat &dstWar
     dst = cv::Mat(getMeshSize(dstWarpMesh), CV_8UC3);
 
     cv::Size meshGridSize = {dstWarpMesh.cols - 1, dstWarpMesh.rows - 1}; 
-    cv::Mat primeMesh = meshGenerator::createPrimeMesh(src.size(), meshGridSize);
+    cv::Mat primeMesh = mesh_generator::createPrimeMesh(src.size(), meshGridSize);
     std::vector<cv::Point2f> tmp_prime_poly2f, tmp_warp_poly2f; // Первичный и искаженный полигоны
     cv::Mat tmp_invTransformMat, tmp_invTransformMat23; // матрица преобразования между 
     std::vector<cv::Point2f> includedPoints2f; // Вектор включенных точек в искаженный полигон
