@@ -194,7 +194,7 @@ namespace mesh_generator::longitudinal
                     
                 }
                 else
-                { // отвечает за сглаживание
+                { // отвечает за сглаживание //TODO:: Разобраться, как это работает, почему это дает более гладкий переход сетки ?
                     rel_coordinate_node_in_half_period = 1 - rel_coordinate_node_in_half_period;
                 }
 
@@ -298,6 +298,33 @@ namespace mesh_generator::longitudinal
             std::function<double(double)> base_callback = [](double arg)
             {
                 return std::sin(M_PI_2 * arg);
+            };
+            createLongitudinalTiltWaveBaseCallbackWarpMesh(
+                base_callback,
+                primeMesh_src,
+                warpMesh_dst,
+                frameSize_src,
+                meshGridSize_src,
+                halfPeriodOfWaveDividedByMeshCellDiag,
+                base_axis,
+                tilt_angle_rad_counterclockwise_rel_base_axis,
+                cleverShiftBorderNodes);
+        }
+
+        void createLongitudinalTiltWaveGammaWarpMesh(
+            const cv::Mat &primeMesh_src, 
+            cv::Mat &warpMesh_dst, 
+            cv::Size frameSize_src, 
+            cv::Size meshGridSize_src, 
+            double gamma_coefficient, 
+            double halfPeriodOfWaveDividedByMeshCellDiag, 
+            mesh_nodes_move::WaveCallbackMeshPropagationAxis base_axis, 
+            float tilt_angle_rad_counterclockwise_rel_base_axis, 
+            bool cleverShiftBorderNodes)
+        {
+            std::function<double(double)> base_callback = [gamma_coefficient](double arg)
+            {
+                return std::pow(arg, gamma_coefficient);
             };
             createLongitudinalTiltWaveBaseCallbackWarpMesh(
                 base_callback,

@@ -46,6 +46,18 @@ namespace mesh_generator::longitudinal
             float tilt_angle_rad_counterclockwise_rel_base_axis,
             bool cleverShiftBorderNodes = true); // угол наклона направления распространения волны в радианах против часовой стрелки относительно base_axis    
 
+        void createLongitudinalTiltWaveGammaWarpMesh(
+            const cv::Mat &primeMesh_src, 
+            cv::Mat &warpMesh_dst, 
+            cv::Size frameSize_src, 
+            cv::Size meshGridSize_src, 
+            double gamma_coefficient,
+            double halfPeriodOfWaveDividedByMeshCellDiag,
+            mesh_nodes_move::WaveCallbackMeshPropagationAxis base_axis, // ось, относительно которой реализуется наклон против часовой стрелки
+            float tilt_angle_rad_counterclockwise_rel_base_axis,
+            bool cleverShiftBorderNodes = true); // угол наклона направления распространения волны в радианах против часовой стрелки относительно base_axis    
+
+
         void createLongitudinalWaveSinWarpMeshDistortion(
             const cv::Mat &primeMesh_src, 
             cv::Mat &warpMesh_dst, 

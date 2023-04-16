@@ -79,19 +79,47 @@ int main(int kargs, char* kwargs[])
     //     gamma_coeff,
     //     halfPeriodOfWaveDividedByMeshCellDiag);
 
-    mesh_generator::longitudinal::plane_waves::createLongitudinalTiltWaveSinWarpMesh(
+    // mesh_generator::longitudinal::plane_waves::createLongitudinalTiltWaveSinWarpMesh(
+    //     srcMesh,
+    //     dstMesh,
+    //     workFrameSize,
+    //     meshGridSize,
+    //     1.5,
+    //     mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
+    //     -M_PI/3,
+    //     true);
+
+    // mesh_generator::longitudinal::plane_waves::createLongitudinalTiltWaveSinWarpMesh(
+    //     dstMesh,
+    //     dstMesh,
+    //     workFrameSize,
+    //     meshGridSize,
+    //     4,
+    //     mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
+    //     -M_PI/6,
+    //     true);
+    // createLongitudinalTiltWaveSinWarpMesh
+
+    mesh_generator::longitudinal::plane_waves::createLongitudinalTiltWaveGammaWarpMesh(
         srcMesh,
         dstMesh,
         workFrameSize,
         meshGridSize,
-        halfPeriodOfWaveDividedByMeshCellDiag,
+        1.1,
+        1.5,
         mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
-        -M_PI/10,
+        -M_PI/3,
         true);
-
-    // createLongitudinalTiltWaveSinWarpMesh
-
-
+    mesh_generator::longitudinal::plane_waves::createLongitudinalTiltWaveGammaWarpMesh(
+        srcMesh,
+        dstMesh,
+        workFrameSize,
+        meshGridSize,
+        1.1,
+        1.5,
+        mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
+        -M_PI/6,
+        true);
     // cv::Mat srcframe = cv::imread("../data/test_warp_frame_v5.png");
     cv::Mat srcframe = cv::imread("../data/test_warp_frame_v3.png");
     cv::resize(srcframe, srcframe, workFrameSize);
@@ -122,43 +150,43 @@ int main(int kargs, char* kwargs[])
 
 
 
-    // cv::Mat warpgeomremap, warpperspective, warpaffine;
-    // MeshWarpApplicator wma(srcMesh, dstMesh);
+    cv::Mat warpgeomremap, warpperspective, warpaffine;
+    MeshWarpApplicator wma(srcMesh, dstMesh);
 
 
 
 
 
-    // wma.apply(srcframe, warpgeomremap);
-    // imageMeshWarpPerspective(srcframe, warpperspective, dstMesh);
-    // imageMeshWarpAffine(srcframe, warpaffine, dstMesh);
+    wma.apply(srcframe, warpgeomremap);
+    imageMeshWarpPerspective(srcframe, warpperspective, dstMesh);
+    imageMeshWarpAffine(srcframe, warpaffine, dstMesh);
 
-    // cv::imshow("dst_warpgeomremap", warpgeomremap);
-    // std::cout << "warpgeomremap_size=" << warpgeomremap.size() << std::endl;
-    // cv::imshow("dst_warpperspective", warpperspective);
-    // std::cout << "warpperspective_size=" << warpperspective.size() << std::endl;
+    cv::imshow("dst_warpgeomremap", warpgeomremap);
+    std::cout << "warpgeomremap_size=" << warpgeomremap.size() << std::endl;
+    cv::imshow("dst_warpperspective", warpperspective);
+    std::cout << "warpperspective_size=" << warpperspective.size() << std::endl;
 
-    // cv::imshow("dst_warpaffine", warpaffine);
+    cv::imshow("dst_warpaffine", warpaffine);
 
-    // // cv::imwrite("../images_result/warpgeomremap.png", warpgeomremap);
-    // // cv::imwrite("../images_result/warpperspective.png", warpperspective);
-    // // cv::imwrite("../images_result/warpaffine.png", warpaffine);
+    // cv::imwrite("../images_result/warpgeomremap.png", warpgeomremap);
+    // cv::imwrite("../images_result/warpperspective.png", warpperspective);
+    // cv::imwrite("../images_result/warpaffine.png", warpaffine);
 
-    // drawMesh(warpgeomremap, dstMesh, colors::red, true, cv::LineStyles::DASHED);
-    // drawMesh(warpperspective, dstMesh, colors::red, true, cv::LineStyles::DASHED);
-    // drawMesh(warpaffine, dstMesh, colors::red, true, cv::LineStyles::DASHED);
+    drawMesh(warpgeomremap, dstMesh, colors::red, true, cv::LineStyles::DASHED);
+    drawMesh(warpperspective, dstMesh, colors::red, true, cv::LineStyles::DASHED);
+    drawMesh(warpaffine, dstMesh, colors::red, true, cv::LineStyles::DASHED);
 
-    // cv::imshow("dst_warpgeomremap_mesh", warpgeomremap);
-    // cv::imshow("dst_warpperspective_mesh", warpperspective);
-    // cv::imshow("dst_warpaffine_mesh", warpaffine);
+    cv::imshow("dst_warpgeomremap_mesh", warpgeomremap);
+    cv::imshow("dst_warpperspective_mesh", warpperspective);
+    cv::imshow("dst_warpaffine_mesh", warpaffine);
 
-    // // cv::imwrite("../images_result/warpgeomremap_mesh.png", warpgeomremap);
-    // // cv::imwrite("../images_result/warpperspective_mesh.png", warpperspective);
-    // // cv::imwrite("../images_result/warpaffine_mesh.png", warpaffine);
+    // cv::imwrite("../images_result/warpgeomremap_mesh.png", warpgeomremap);
+    // cv::imwrite("../images_result/warpperspective_mesh.png", warpperspective);
+    // cv::imwrite("../images_result/warpaffine_mesh.png", warpaffine);
 
-    // drawMesh(srcframe, srcMesh, colors::blue, true, cv::LineStyles::DASHED);
-    // cv::imshow("src", srcframe);
-    // // cv::imwrite("../images_result/src_mesh.png", srcframe);
+    drawMesh(srcframe, srcMesh, colors::blue, true, cv::LineStyles::DASHED);
+    cv::imshow("src", srcframe);
+    // cv::imwrite("../images_result/src_mesh.png", srcframe);
 
     cv::waitKey();
     cv::destroyAllWindows();
