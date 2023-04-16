@@ -9,7 +9,6 @@
 #include "frame_warp_processing.hpp"
 #include "draw_custom_line.hpp"
 #include "colors.hpp"
-#include "test_equation_find_pos_map.h"
 #include "mesh_grid_nodes_mover_common.hpp"
 
 cv::Scalar red = cv::Scalar(0, 0, 255);
@@ -105,20 +104,20 @@ int main(int kargs, char* kwargs[])
         dstMesh,
         workFrameSize,
         meshGridSize,
-        1.1,
+        2,
         1.5,
         mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
         -M_PI/3,
         true);
     mesh_generator::longitudinal::plane_waves::createLongitudinalTiltWaveGammaWarpMesh(
-        srcMesh,
+        dstMesh,
         dstMesh,
         workFrameSize,
         meshGridSize,
-        1.1,
+        2,
         1.5,
         mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
-        -M_PI/6,
+        M_PI/6,
         true);
     // cv::Mat srcframe = cv::imread("../data/test_warp_frame_v5.png");
     cv::Mat srcframe = cv::imread("../data/test_warp_frame_v3.png");
