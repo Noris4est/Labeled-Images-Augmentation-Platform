@@ -67,16 +67,19 @@ int main(int kargs, char* kwargs[])
     //     mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
     //     false,
     //     true);
-    mesh_generator::longitudinal::createLongitudinalWaveSinFromSourcePointConcentric(
+    double gamma_coeff = 0.7;
+    cv::Point source_wave_point = {300,300};
+    double halfPeriodOfWaveDividedByMeshCellDiag = 5;
+    mesh_generator::longitudinal::concentric_spherical_waves::createLongitudinalWaveGammaFromSourcePointConcentric(
         srcMesh,
         dstMesh,
         workFrameSize,
         meshGridSize,
-        cv::Point(300,200), 2); // TODO : разобраться, почему при source_point = {300,300} падает с ошибкой
-        // Судя по всему, нужно смещать граничные ноды тоже, т.к. появляется ошибка именно по выпуклости 
-        // Возможно снизить требования по выпуклости
+        source_wave_point,
+        gamma_coeff,
+        halfPeriodOfWaveDividedByMeshCellDiag);
     
-    MeshWarpApplicator wma(srcMesh, dstMesh);
+
     // cv::Mat srcframe = cv::imread("../data/test_warp_frame_v5.png");
     cv::Mat srcframe = cv::imread("../data/test_warp_frame_v3.png");
     cv::resize(srcframe, srcframe, workFrameSize);
@@ -104,7 +107,8 @@ int main(int kargs, char* kwargs[])
     // cv::imwrite("../images_result/dstMeshFrame.png", dstMeshFrame);
 
     cv::Mat warpgeomremap, warpperspective, warpaffine;
-    
+    MeshWarpApplicator wma(srcMesh, dstMesh);
+
     wma.apply(srcframe, warpgeomremap);
     imageMeshWarpPerspective(srcframe, warpperspective, dstMesh);
     imageMeshWarpAffine(srcframe, warpaffine, dstMesh);

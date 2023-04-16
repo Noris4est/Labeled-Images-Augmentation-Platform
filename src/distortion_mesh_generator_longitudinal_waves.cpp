@@ -7,6 +7,8 @@
 
 
 namespace mesh_generator::longitudinal
+{
+    namespace plane_waves
     {
         void createLongitudinalWaveSinWarpMeshDirectionX(const cv::Mat &primeMesh, cv::Mat &warpMesh, cv::Size frameSize, cv::Size meshGridSize, cv::Size callbackMeshSize)
         {
@@ -100,6 +102,28 @@ namespace mesh_generator::longitudinal
             warpMesh_dst = warpMesh_dst_proxy;
         }
 
+        void createLongitudinalTiltWaveBaseCallbackWarpMesh(std::function<double(double)> base_callback, const cv::Mat &primeMesh_src, cv::Mat &warpMesh_dst, cv::Size frameSize_src, cv::Size meshGridSize_src, cv::Size callbackMeshSize_src, mesh_nodes_move::WaveCallbackMeshPropagationAxis base_axis, float tilt_angle_rad_counterclockwise_rel_base_axis)
+        {
+
+        }
+
+        void createLongitudinalTiltWaveSinWarpMesh(const cv::Mat &primeMesh_src, cv::Mat &warpMesh_dst, cv::Size frameSize_src, cv::Size meshGridSize_src, cv::Size callbackMeshSize_src, mesh_nodes_move::WaveCallbackMeshPropagationAxis base_axis, float tilt_angle_rad_counterclockwise_rel_base_axis)
+        {
+            std::function<double(double)> base_callback = [](double arg)
+            {
+                return std::sin(M_PI_2 * arg);
+            };
+            createLongitudinalTiltWaveBaseCallbackWarpMesh(
+                base_callback,
+                primeMesh_src,
+                warpMesh_dst,
+                frameSize_src,
+                meshGridSize_src,
+                callbackMeshSize_src,
+                base_axis,
+                tilt_angle_rad_counterclockwise_rel_base_axis);
+        }
+
         void createLongitudinalWaveSinWarpMeshDistortion(
             const cv::Mat &primeMesh_src, 
             cv::Mat &warpMesh_dst, 
@@ -185,14 +209,17 @@ namespace mesh_generator::longitudinal
             }
             warpMesh_dst = warpMesh_dst_proxy;
         }
-
+    }
+    namespace concentric_spherical_waves
+    {
         void createLongitudinalWaveSinFromSourcePointConcentric(
             const cv::Mat &primeMesh_src, 
             cv::Mat &warpMesh_dst, 
             cv::Size frameSize_src, 
             cv::Size meshGridSize_src, 
             cv::Point sourcePoint,
-            double halfPeriodOfWaveDividedByMeshCellDiag)
+            double halfPeriodOfWaveDividedByMeshCellDiag,
+            bool cleverShiftBorderNodes)
         {
             std::function<double(double)> callback_base = [](double arg)
             {
@@ -205,8 +232,34 @@ namespace mesh_generator::longitudinal
                 frameSize_src,
                 meshGridSize_src,
                 sourcePoint,
-                halfPeriodOfWaveDividedByMeshCellDiag);
+                halfPeriodOfWaveDividedByMeshCellDiag,
+                cleverShiftBorderNodes);
         } // createLongitudinalWaveSinFromSourcePoint
+
+        void createLongitudinalWaveGammaFromSourcePointConcentric(
+            const cv::Mat &primeMesh_src, 
+            cv::Mat &warpMesh_dst, 
+            cv::Size frameSize_src, 
+            cv::Size meshGridSize_src, 
+            cv::Point sourcePoint, 
+            double gamma_coefficient, 
+            double halfPeriodOfWaveDividedByMeshCellDiag,
+            bool cleverShiftBorderNodes)
+        {
+            std::function<double(double)> callback_prime = [gamma_coefficient](double arg)
+            {
+                return std::pow(arg, gamma_coefficient);
+            };
+            createLongitudinalWaveBaseCallbackFromSourcePointConcentric(
+                callback_prime,
+                primeMesh_src,
+                warpMesh_dst,
+                frameSize_src,
+                meshGridSize_src,
+                sourcePoint,
+                halfPeriodOfWaveDividedByMeshCellDiag,
+                cleverShiftBorderNodes);
+        }
 
         void createLongitudinalWaveBaseCallbackFromSourcePointConcentric(
             std::function<double(double)> base_callback, 
@@ -215,7 +268,8 @@ namespace mesh_generator::longitudinal
             cv::Size frameSize_src, 
             cv::Size meshGridSize_src, 
             cv::Point sourcePoint, 
-            double halfPeriodOfWaveDividedByMeshCellDiag)
+            double halfPeriodOfWaveDividedByMeshCellDiag,
+            bool cleverShiftBorderNodes)
         {
             assert(!primeMesh_src.empty());
             assert(primeMesh_src.rows !=0 && primeMesh_src.cols != 0);
@@ -251,71 +305,121 @@ namespace mesh_generator::longitudinal
             double cell_diag = std::sqrt(cell_width*cell_width + cell_height*cell_height);
             double waveHalfPeriod = halfPeriodOfWaveDividedByMeshCellDiag*cell_diag;
             double wavePeriod = waveHalfPeriod * 2;
-            int i_begin = 1, j_begin = 1, i_end = meshGridSize_src.height, j_end = meshGridSize_src.width;
             cv::Point point_src, point_dst;
-            int vec_source2node_dx, vec_source2node_dy;
-            double len_vec_source2node;
-            double vec_s2n_dl_abs; // абсолютное приращение длины вектора в зависимости от номера "кольца", в которое попала вершина сетки географически; s2n = source2node
-            double vec_s2n_dl_rel; // Оно же будет равняться приращению для dx и dy
-            double division_len_vec_s2n_2_wavePeriod, division_len_vec_s2n_2_waveHalfPeriod; // частное между делимым len_vec_source2node и делителем wavePeriod
-            double frac_part_div, frac_part_div_for_half_period;
-            double int_part_div, int_part_div_for_half_period; // т.к. у std::modf нет переопределение на целочисленный второй аргумент
-            double abs_coordinate_node_in_ring;
-            double rel_coordinate_node_in_ring; // относительный радиус
-            double start_radius_from_source_current_ring; // начальный радиус текущего кольца (в котором находится node)
 
-            double warp_rel_coordinate_node_in_ring, warp_abs_coordinate_node_in_ring;
-
-            double delta_rel_coordinate_in_ring; //delta radius
-            double delta_abs_coordinate_in_ring; 
-
-            int vec_source2node_dx_dst, vec_source2node_dy_dst;
-
-            for(int i = i_begin; i < i_end; ++i) //обходим все вершины mesh
+            std::function<cv::Point2i(cv::Point2i)> apply_warp2node = [
+                calc_hypotenuse,
+                callback_mover,
+                inv_callback_mover,
+                sourcePoint,
+                wavePeriod,
+                waveHalfPeriod
+            ](cv::Point point_src)
             {
-                for(int j = j_begin; j < j_end; ++j)
+                if(point_src == sourcePoint)
+                {
+                    return sourcePoint;
+                }
+                int vec_source2node_dx, vec_source2node_dy;
+                double len_vec_source2node;
+                double division_len_vec_s2n_2_wavePeriod, division_len_vec_s2n_2_waveHalfPeriod; // частное между делимым len_vec_source2node и делителем wavePeriod
+                double frac_part_div, frac_part_div_for_half_period;
+                double int_part_div, int_part_div_for_half_period; // т.к. у std::modf нет переопределение на целочисленный второй аргумент
+                double abs_coordinate_node_in_ring;
+                double rel_coordinate_node_in_ring; // относительный радиус
+                double start_radius_from_source_current_ring; // начальный радиус текущего кольца (в котором находится node)
+                double warp_rel_coordinate_node_in_ring, warp_abs_coordinate_node_in_ring;
+                double delta_rel_coordinate_in_ring; //delta radius
+                double delta_abs_coordinate_in_ring; 
+                double vec_s2n_dl_abs; // абсолютное приращение длины вектора в зависимости от номера "кольца", в которое попала вершина сетки географически; s2n = source2node
+                double vec_s2n_dl_rel; // Оно же будет равняться приращению для dx и dy
+
+                int vec_source2node_dx_dst, vec_source2node_dy_dst;
+                cv::Point point_dst;
+    
+                // processing point_src -> point_dst
+                vec_source2node_dx = point_src.x - sourcePoint.x;
+                vec_source2node_dy = point_src.y - sourcePoint.y;
+
+                len_vec_source2node = calc_hypotenuse(vec_source2node_dx, vec_source2node_dy);
+                
+                division_len_vec_s2n_2_wavePeriod = len_vec_source2node / wavePeriod;
+                frac_part_div = std::modf(division_len_vec_s2n_2_wavePeriod, &int_part_div);
+                
+                division_len_vec_s2n_2_waveHalfPeriod = len_vec_source2node / waveHalfPeriod;
+                frac_part_div_for_half_period = std::modf(division_len_vec_s2n_2_waveHalfPeriod, &int_part_div_for_half_period);
+
+                rel_coordinate_node_in_ring = frac_part_div_for_half_period;
+                if(frac_part_div < 0.5)
+                {   
+                    warp_rel_coordinate_node_in_ring = callback_mover(rel_coordinate_node_in_ring);
+                    //direct callback
+                    
+                }
+                else
+                {
+                    warp_rel_coordinate_node_in_ring = inv_callback_mover(rel_coordinate_node_in_ring);
+                    //inverse callback
+                }
+                delta_rel_coordinate_in_ring = warp_rel_coordinate_node_in_ring - rel_coordinate_node_in_ring;
+                delta_abs_coordinate_in_ring = delta_rel_coordinate_in_ring * waveHalfPeriod;
+                vec_s2n_dl_abs = delta_abs_coordinate_in_ring;
+                vec_s2n_dl_rel = vec_s2n_dl_abs / len_vec_source2node ;
+                vec_source2node_dx_dst = vec_source2node_dx * (1 + vec_s2n_dl_rel);
+                vec_source2node_dy_dst = vec_source2node_dy * (1 + vec_s2n_dl_rel);
+                point_dst.x = vec_source2node_dx_dst + sourcePoint.x;
+                point_dst.y = vec_source2node_dy_dst + sourcePoint.y;
+                return point_dst;
+            };
+
+            for(int i = 1; i < warpMesh_dst_proxy.rows - 1; ++i) //обходим все вершины mesh (кроме окаймляющей рамки)
+            {
+                for(int j = 1; j < warpMesh_dst_proxy.cols- 1; ++j)
                 {
                     point_src = primeMesh_src.at<cv::Point2i>(i, j);
-
-                    // processing point_src -> point_dst
-                    vec_source2node_dx = point_src.x - sourcePoint.x;
-                    vec_source2node_dy = point_src.y - sourcePoint.y;
-
-                    len_vec_source2node = calc_hypotenuse(vec_source2node_dx, vec_source2node_dy);
-                    
-                    division_len_vec_s2n_2_wavePeriod = len_vec_source2node / wavePeriod;
-                    frac_part_div = std::modf(division_len_vec_s2n_2_wavePeriod, &int_part_div);
-                    
-                    division_len_vec_s2n_2_waveHalfPeriod = len_vec_source2node / waveHalfPeriod;
-                    frac_part_div_for_half_period = std::modf(division_len_vec_s2n_2_waveHalfPeriod, &int_part_div_for_half_period);
-                    
-                    // start_radius_from_source_current_ring = int_part_div_for_half_period * waveHalfPeriod;
-                    
-                    // abs_coordinate_node_in_ring = len_vec_source2node - start_radius_from_source_current_ring;
-                    // rel_coordinate_node_in_ring = abs_coordinate_node_in_ring / waveHalfPeriod;
-                    rel_coordinate_node_in_ring = frac_part_div_for_half_period;
-                    if(frac_part_div < 0.5)
-                    {   
-                        warp_rel_coordinate_node_in_ring = callback_mover(rel_coordinate_node_in_ring);
-                        //direct callback
-                        
-                    }
-                    else
-                    {
-                        warp_rel_coordinate_node_in_ring = inv_callback_mover(rel_coordinate_node_in_ring);
-                        //inverse callback
-                    }
-                    delta_rel_coordinate_in_ring = warp_rel_coordinate_node_in_ring - rel_coordinate_node_in_ring;
-                    delta_abs_coordinate_in_ring = delta_rel_coordinate_in_ring * waveHalfPeriod;
-                    vec_s2n_dl_abs = delta_abs_coordinate_in_ring;
-                    vec_s2n_dl_rel = vec_s2n_dl_abs / len_vec_source2node ;
-                    vec_source2node_dx_dst = vec_source2node_dx * (1 + vec_s2n_dl_rel);
-                    vec_source2node_dy_dst = vec_source2node_dy * (1 + vec_s2n_dl_rel);
-                    point_dst.x = vec_source2node_dx_dst + sourcePoint.x;
-                    point_dst.y = vec_source2node_dy_dst + sourcePoint.y;
+                    point_dst = apply_warp2node(point_src);
                     warpMesh_dst_proxy.at<cv::Point2i>(i, j) = point_dst;
+                }
+            }
+            
+
+            if(cleverShiftBorderNodes)
+            {
+                // у крайних вершин (не совпадающих с вершинами изображения) смещается только 1 координата
+                // у вершин сетки, совпадающих с вершинами изображения смещений нет
+
+                // обход left и right ребер; смещается только "y" - координата
+                cv::Point point_dst_tmp;
+                int j_left = 0, j_right = warpMesh_dst_proxy.cols - 1;
+                std::vector<int> j_vec = {j_left, j_right};
+                for(int j : j_vec)
+                {
+                    for(int i = 1; i < warpMesh_dst_proxy.rows - 1; ++i)
+                    {
+                        point_src = primeMesh_src.at<cv::Point2i>(i, j);
+                        point_dst_tmp = apply_warp2node(point_src);
+                        point_dst.x = point_src.x;
+                        point_dst.y = point_dst_tmp.y;
+                        warpMesh_dst_proxy.at<cv::Point2i>(i, j) = point_dst;
+                    }
+                }
+
+                // //обход bottom и top ребер
+                int i_top = 0, i_bottom = warpMesh_dst_proxy.rows - 1;
+                std::vector<int> i_vec = {i_top, i_bottom};
+                for(int i : i_vec)
+                {
+                    for(int j = 1; j < warpMesh_dst_proxy.cols - 1; ++j)
+                    {
+                        point_src = primeMesh_src.at<cv::Point2i>(i, j);
+                        point_dst_tmp = apply_warp2node(point_src);
+                        point_dst.y = point_src.y;
+                        point_dst.x = point_dst_tmp.x;
+                        warpMesh_dst_proxy.at<cv::Point2i>(i, j) = point_dst;
+                    }
                 }
             }
             warpMesh_dst = warpMesh_dst_proxy;
         }
     }
+}
