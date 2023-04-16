@@ -31,18 +31,20 @@ namespace mesh_generator::longitudinal
             cv::Mat &warpMesh_dst, 
             cv::Size frameSize_src, 
             cv::Size meshGridSize_src, 
-            cv::Size callbackMeshSize_src,
+            double halfPeriodOfWaveDividedByMeshCellDiag,
             mesh_nodes_move::WaveCallbackMeshPropagationAxis base_axis, // ось, относительно которой реализуется наклон против часовой стрелки
-            float tilt_angle_rad_counterclockwise_rel_base_axis); // угол наклона направления распространения волны в радианах против часовой стрелки относительно base_axis    
+            float tilt_angle_rad_counterclockwise_rel_base_axis,
+            bool cleverShiftBorderNodes); // угол наклона направления распространения волны в радианах против часовой стрелки относительно base_axis    
 
         void createLongitudinalTiltWaveSinWarpMesh(
             const cv::Mat &primeMesh_src, 
             cv::Mat &warpMesh_dst, 
             cv::Size frameSize_src, 
             cv::Size meshGridSize_src, 
-            cv::Size callbackMeshSize_src,
+            double halfPeriodOfWaveDividedByMeshCellDiag,
             mesh_nodes_move::WaveCallbackMeshPropagationAxis base_axis, // ось, относительно которой реализуется наклон против часовой стрелки
-            float tilt_angle_rad_counterclockwise_rel_base_axis); // угол наклона направления распространения волны в радианах против часовой стрелки относительно base_axis    
+            float tilt_angle_rad_counterclockwise_rel_base_axis,
+            bool cleverShiftBorderNodes = true); // угол наклона направления распространения волны в радианах против часовой стрелки относительно base_axis    
 
         void createLongitudinalWaveSinWarpMeshDistortion(
             const cv::Mat &primeMesh_src, 

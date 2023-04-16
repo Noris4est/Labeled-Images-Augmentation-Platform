@@ -102,12 +102,198 @@ namespace mesh_generator::longitudinal
             warpMesh_dst = warpMesh_dst_proxy;
         }
 
-        void createLongitudinalTiltWaveBaseCallbackWarpMesh(std::function<double(double)> base_callback, const cv::Mat &primeMesh_src, cv::Mat &warpMesh_dst, cv::Size frameSize_src, cv::Size meshGridSize_src, cv::Size callbackMeshSize_src, mesh_nodes_move::WaveCallbackMeshPropagationAxis base_axis, float tilt_angle_rad_counterclockwise_rel_base_axis)
+        void createLongitudinalTiltWaveBaseCallbackWarpMesh(
+            std::function<double(double)> base_callback, 
+            const cv::Mat &primeMesh_src, 
+            cv::Mat &warpMesh_dst, 
+            cv::Size frameSize_src, 
+            cv::Size meshGridSize_src, 
+            double halfPeriodOfWaveDividedByMeshCellDiag,
+            mesh_nodes_move::WaveCallbackMeshPropagationAxis base_axis, 
+            float tilt_angle_rad_counterclockwise_rel_base_axis,
+            bool cleverShiftBorderNodes)
         {
+            cv::Mat warpMesh_dst_proxy = primeMesh_src.clone();
+            assert(!primeMesh_src.empty());
+            assert(primeMesh_src.rows !=0 && primeMesh_src.cols != 0);
+            assert(frameSize_src.width != 0 && frameSize_src.height !=0);
 
+            cv::Point2i primeMesh_br = primeMesh_src.at<cv::Point2i>(primeMesh_src.rows - 1, primeMesh_src.cols - 1);
+            assert(primeMesh_br.x + 1 == frameSize_src.width && primeMesh_br.y + 1 == frameSize_src.height);
+
+            double cell_width, cell_height;
+            cell_width = frameSize_src.width / meshGridSize_src.width;
+            cell_height = frameSize_src.height / meshGridSize_src.height;
+            double cell_diag = std::sqrt(cell_width*cell_width + cell_height*cell_height);
+            double waveHalfPeriod = halfPeriodOfWaveDividedByMeshCellDiag*cell_diag;
+            double wavePeriod = waveHalfPeriod * 2;
+
+
+
+            // Ось x вправо, ось y вниз - по стандарту opencv
+            float tilt_angle_rad_clock_rel_base_x_axis;
+
+            if(base_axis == mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX)
+            {
+                tilt_angle_rad_clock_rel_base_x_axis = - tilt_angle_rad_counterclockwise_rel_base_axis;
+            }
+            else if(base_axis == mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisY) //
+            {
+                tilt_angle_rad_clock_rel_base_x_axis = - (tilt_angle_rad_counterclockwise_rel_base_axis - M_PI_2);
+            }
+            else
+            {
+                throw std::runtime_error("Not supported axis");
+            }
+            // Волновой вектор распространения волны (без 2*pi)
+            double wave_vector_dx = std::cos(tilt_angle_rad_clock_rel_base_x_axis);
+            double wave_vector_dy = std::sin(tilt_angle_rad_clock_rel_base_x_axis); 
+
+
+            // Скалярное произведение векторов
+            std::function<double(cv::Vec2d, cv::Vec2d)> vec_scalar_mul = [](cv::Vec2d v1, cv::Vec2d v2)
+            {
+                return v1[0]*v2[0] + v1[1]*v2[1];
+            };
+
+            cv::Vec2d wave_vector = {wave_vector_dx, wave_vector_dy};
+            
+            std::function<double(double)> inv_base_callback  = [base_callback](double arg)
+            {
+                return 1 - base_callback(1 - arg);
+            };
+
+            std::function<cv::Point2i(cv::Point2i)> apply_warp2node = [
+                base_callback,
+                inv_base_callback,
+                vec_scalar_mul,
+                wave_vector,
+                waveHalfPeriod,
+                wavePeriod
+            ](cv::Point point_src)
+            {
+                // вектор из начала системы координат до текущей ноды структурной сетки
+                cv::Vec2d node_vec_from_coords_origin = {static_cast<double>(point_src.x), static_cast<double>(point_src.y)};
+
+                double vec_mul = vec_scalar_mul(wave_vector, node_vec_from_coords_origin); // like cos(k*r + w*t + fi); vec_mul ~ k*r
+
+                double div_vec_mul_2_wave_period = vec_mul / wavePeriod; //остаток от деления отражает фазу текущей точки на волны
+                double div_vec_mul_2_wave_half_period = vec_mul / waveHalfPeriod; //остаток от деления отражает фазу текущей точки на волны
+                double int_part_div_full, int_part_div_half;
+                double frac_part_div_full = std::modf(div_vec_mul_2_wave_period, &int_part_div_full);
+                double frac_part_div_half = std::modf(div_vec_mul_2_wave_half_period, &int_part_div_half);
+                
+                double rel_coordinate_node_in_half_period = frac_part_div_half;
+                double warp_rel_coord_node_in_half_period;
+
+                int sign = 1;
+                if(rel_coordinate_node_in_half_period < 0)
+                {
+                    sign = -1;
+                    rel_coordinate_node_in_half_period *= -1;
+                    
+                }
+                else
+                { // отвечает за сглаживание
+                    rel_coordinate_node_in_half_period = 1 - rel_coordinate_node_in_half_period;
+                }
+
+                if(std::abs(frac_part_div_full) > 0.5)
+                {
+                    if(sign<0) //
+                    {
+                        warp_rel_coord_node_in_half_period = base_callback(rel_coordinate_node_in_half_period);
+                    }
+                    else
+                    {
+                        warp_rel_coord_node_in_half_period = inv_base_callback(rel_coordinate_node_in_half_period);
+                    }
+                }
+                else
+                {
+                    if(sign<0) //
+                    {
+                        warp_rel_coord_node_in_half_period = inv_base_callback(rel_coordinate_node_in_half_period);
+                    }
+                    else
+                    {
+                        warp_rel_coord_node_in_half_period = base_callback(rel_coordinate_node_in_half_period);
+                    }
+                }
+
+
+                // warp_rel_coord_node_in_half_period *= sign;
+
+                double abs_coordinate_node_in_half_period = rel_coordinate_node_in_half_period * waveHalfPeriod;
+                double warp_abs_coord_node_in_half_period = warp_rel_coord_node_in_half_period * waveHalfPeriod;
+
+                double node_dl_move = warp_abs_coord_node_in_half_period - abs_coordinate_node_in_half_period;
+                cv::Point point_dst = point_src;
+                point_dst.x += wave_vector[0] * node_dl_move;
+                point_dst.y += wave_vector[1] * node_dl_move;
+
+                return point_dst;
+            };
+
+            cv::Point point_src, point_dst;
+            for(int i = 1; i < warpMesh_dst_proxy.rows - 1; ++i) //обходим все вершины mesh (кроме окаймляющей рамки)
+            {
+                for(int j = 1; j < warpMesh_dst_proxy.cols- 1; ++j)
+                {
+                    point_src = primeMesh_src.at<cv::Point2i>(i, j);
+                    point_dst = apply_warp2node(point_src);
+                    warpMesh_dst_proxy.at<cv::Point2i>(i, j) = point_dst;
+                }
+            }
+
+            if(cleverShiftBorderNodes)
+            {
+                // у крайних вершин (не совпадающих с вершинами изображения) смещается только 1 координата
+                // у вершин сетки, совпадающих с вершинами изображения смещений нет
+
+                // обход left и right ребер; смещается только "y" - координата
+                cv::Point point_dst_tmp;
+                int j_left = 0, j_right = warpMesh_dst_proxy.cols - 1;
+                std::vector<int> j_vec = {j_left, j_right};
+                for(int j : j_vec)
+                {
+                    for(int i = 1; i < warpMesh_dst_proxy.rows - 1; ++i)
+                    {
+                        point_src = primeMesh_src.at<cv::Point2i>(i, j);
+                        point_dst_tmp = apply_warp2node(point_src);
+                        point_dst.x = point_src.x;
+                        point_dst.y = point_dst_tmp.y;
+                        warpMesh_dst_proxy.at<cv::Point2i>(i, j) = point_dst;
+                    }
+                }
+
+                // //обход bottom и top ребер
+                int i_top = 0, i_bottom = warpMesh_dst_proxy.rows - 1;
+                std::vector<int> i_vec = {i_top, i_bottom};
+                for(int i : i_vec)
+                {
+                    for(int j = 1; j < warpMesh_dst_proxy.cols - 1; ++j)
+                    {
+                        point_src = primeMesh_src.at<cv::Point2i>(i, j);
+                        point_dst_tmp = apply_warp2node(point_src);
+                        point_dst.y = point_src.y;
+                        point_dst.x = point_dst_tmp.x;
+                        warpMesh_dst_proxy.at<cv::Point2i>(i, j) = point_dst;
+                    }
+                }
+            }
+            warpMesh_dst = warpMesh_dst_proxy;
         }
 
-        void createLongitudinalTiltWaveSinWarpMesh(const cv::Mat &primeMesh_src, cv::Mat &warpMesh_dst, cv::Size frameSize_src, cv::Size meshGridSize_src, cv::Size callbackMeshSize_src, mesh_nodes_move::WaveCallbackMeshPropagationAxis base_axis, float tilt_angle_rad_counterclockwise_rel_base_axis)
+        void createLongitudinalTiltWaveSinWarpMesh(
+            const cv::Mat &primeMesh_src, 
+            cv::Mat &warpMesh_dst, 
+            cv::Size frameSize_src, 
+            cv::Size meshGridSize_src, 
+            double halfPeriodOfWaveDividedByMeshCellDiag,
+            mesh_nodes_move::WaveCallbackMeshPropagationAxis base_axis, 
+            float tilt_angle_rad_counterclockwise_rel_base_axis,
+            bool cleverShiftBorderNodes)
         {
             std::function<double(double)> base_callback = [](double arg)
             {
@@ -119,9 +305,10 @@ namespace mesh_generator::longitudinal
                 warpMesh_dst,
                 frameSize_src,
                 meshGridSize_src,
-                callbackMeshSize_src,
+                halfPeriodOfWaveDividedByMeshCellDiag,
                 base_axis,
-                tilt_angle_rad_counterclockwise_rel_base_axis);
+                tilt_angle_rad_counterclockwise_rel_base_axis,
+                cleverShiftBorderNodes);
         }
 
         void createLongitudinalWaveSinWarpMeshDistortion(
