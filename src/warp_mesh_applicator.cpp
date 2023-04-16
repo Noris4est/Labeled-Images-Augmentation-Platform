@@ -317,7 +317,7 @@ void MeshWarpApplicator::perprocessing3nodes()
             current_poly_id = mapPolygonIds.at<ushort>(i,j);
             i_poly = int((current_poly_id-1) / meshGridSize.width);
             j_poly = (current_poly_id-1) % meshGridSize.width;
-            pSrc = warpAffine2Point(cv::Point(j,i), affineMatrixVec[current_poly_id - 1]);
+            pSrc = warpAffine2Point<cv::Point2i>(cv::Point(j,i), affineMatrixVec[current_poly_id - 1]);
             // cv::perspectiveTransform({j,i}, pSrc, affineMatrixVec[current_poly_id - 1]);
             //pSrc = transformCoordinatesPoint4nodePoly(polygon_dst_tmp, polygon_src_tmp, {j,i});
             map_x.at<float>(i, j) = pSrc.x;
