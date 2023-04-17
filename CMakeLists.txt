@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 
 set(COMPILE_TESTS 1)
+set(COMPILE_DEMOS 1)
 set(OpenCV_DIR /home/vitaly/opencv/install_4_5_2_contrib)
 find_package(OpenCV REQUIRED PATHS ${OpenCV_DIR} NO_DEFAULT_PATH)
 
@@ -38,3 +39,14 @@ if(${COMPILE_TESTS} EQUAL 1)
         target_link_libraries(${test_NAME} transform_mappinp_polygon ${OpenCV_LIBS})
     endforeach()
 endif()
+
+if(${COMPILE_DEMOS} EQUAL 1)
+    file(GLOB demo_src "${CMAKE_CURRENT_LIST_DIR}/demo/*.cpp")
+    foreach(demo_src ${demo_src})
+        get_filename_component(demo_NAME "${demo_src}" NAME_WE)
+        #set(test_NAME test_${test_NAME})
+        add_executable("demo_${demo_NAME}" ${demo_src})
+        target_link_libraries("demo_${demo_NAME}" transform_mappinp_polygon ${OpenCV_LIBS})
+    endforeach()
+endif()
+
