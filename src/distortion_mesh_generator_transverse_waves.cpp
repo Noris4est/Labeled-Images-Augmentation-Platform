@@ -30,7 +30,7 @@ namespace mesh_generator::transverse
                 j_cur = p_tmp.x;
                 i_target = i_cur + heightAmplitude * std::sin(sin_arg * j_cur); // координаты итоговой ноды
                 j_target = j_cur;
-                warpMesh_dst.at<cv::Point2i>(i, j) = {j_target, i_target};
+                warpMesh_proxy.at<cv::Point2i>(i, j) = {j_target, i_target};
             }
         }
         warpMesh_dst = warpMesh_proxy;
