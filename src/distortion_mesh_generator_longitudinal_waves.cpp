@@ -564,6 +564,7 @@ namespace mesh_generator::longitudinal
                 frac_part_div_for_half_period = std::modf(division_len_vec_s2n_2_waveHalfPeriod, &int_part_div_for_half_period);
 
                 rel_coordinate_node_in_ring = frac_part_div_for_half_period;
+                rel_coordinate_node_in_ring = 1 - rel_coordinate_node_in_ring; // TODO: разобраться, почему эта строчка добавляет гладкости 
                 if(frac_part_div < 0.5)
                 {   
                     warp_rel_coordinate_node_in_ring = callback_mover(rel_coordinate_node_in_ring);
