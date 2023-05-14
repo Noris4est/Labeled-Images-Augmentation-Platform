@@ -24,6 +24,12 @@ namespace annotation
         void push_back(const LabledRelBbox &lrbbox);
         void push_back(int class_id, float xc, float yc, float w, float h);
 
+        void putSrcMarkFrame2dstFrame_markRecalculation(
+            cv::Size srcFrameSize, 
+            cv::Size dstFrameSize, 
+            cv::Point tl_corner_dst,
+            double intersectionAreaThreshold);
+
         void clear(); //очистить аннотацию
 
         // захват в ROI объектов и пересчет их координат (в координатах ROI)

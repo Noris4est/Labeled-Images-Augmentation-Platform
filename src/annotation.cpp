@@ -229,6 +229,76 @@ void Annotation::applyPerspectiveTransform(cv::Mat warpMat, cv::Size origFrameSi
     CheckValidAndAdaptation();
 } // -- END applyPerspectiveTransform
 
+/*
+    Исходное размеченного изображение размещается на некотором целевом изображении.
+    Размеры исходного и целевого изображений могут соотноситься произвольно.
+    В случае выхода за границы dst изображения каких-то src объектов полностью, они не включаются в dst разметку.
+    В случае частичного выхода за границы dst изображения каких-либо src объектов, 
+    то в зависимости от относительной площади пересечения принимается решение о добавлении в dst разметку
+*/
+void annotation::Annotation::putSrcMarkFrame2dstFrame_markRecalculation(
+    cv::Size srcFrameSize, 
+    cv::Size dstFrameSize, 
+    cv::Point tl_corner_dst, // верхний левый угол указан на dst фрейме
+    double intersectionAreaThreshold)
+{
+    double rel_src_width, rel_dst_width, rel_src_height, rel_dst_height;
+
+    rel_src_width = 1;
+    rel_src_height = 1;
+
+
+    rel_dst_width = rel_src_width * static_cast<double>(dstFrameSize.width) / srcFrameSize.width;
+    rel_dst_height = rel_src_height * static_cast<double>(dstFrameSize.height) / srcFrameSize.height;
+
+    cv::Size2d rel_src_frame_size(rel_src_width, rel_src_height);
+    cv::Size2d rel_dst_frame_size(rel_dst_width, rel_dst_height);
+
+    double tl_corn_x_rel, tl_corn_y_rel;
+
+    tl_corn_x_rel = static_cast<double>(tl_corner_dst.x) / dstFrameSize.width * rel_dst_width;
+    tl_corn_y_rel = static_cast<double>(tl_corner_dst.y) / dstFrameSize.height * rel_dst_height; 
+
+    cv::Rect2d bbox_rel_org, bbox_rel_new, bbox_rel_dst, bbox_rel_new_clear;
+    cv::Rect2i bbox_abs_org, bbox_abs_new;
+
+    cv::Rect2d fullFrameROI(0,0,1,1);
+    for (auto &annot_s : data)
+    {
+        bbox_rel_org = annot_s.get_rect();
+
+        // Суммирование корректно, т.к. bbox'ы приведены в одну систему координат (квазиотносительную).
+        bbox_rel_dst = {bbox_rel_org.x + tl_corn_x_rel, bbox_rel_org.y + tl_corn_y_rel, bbox_rel_org.width, bbox_rel_org.height};
+        bbox_rel_new = {bbox_rel_dst.x / rel_dst_width, bbox_rel_dst.y / rel_dst_height, bbox_rel_dst.width / rel_dst_width, bbox_rel_dst.height / rel_dst_height};
+        
+        //bbox_rel_new может выходить за нормированные (относительные) рамки изображения, следовательно, проверка
+
+        if(
+            bbox_rel_new.x < 0 ||
+            bbox_rel_new.y < 0 || 
+            bbox_rel_new.x + bbox_rel_new.width > 1 ||
+            bbox_rel_new.y + bbox_rel_new.height > 1)
+        {
+            if(calcIntersectionAreaPart(fullFrameROI, bbox_rel_new) >= intersectionAreaThreshold)
+            {
+                annot_s.set_rect(bbox_rel_new);
+            }
+            //иначе не добавляем
+        }
+        else
+        {
+            annot_s.set_rect(bbox_rel_new);
+        }
+        annot_s.CheckValidAndAdaptation();
+    }
+    // cv::Size2d rel_dst_frame_size = cv::Size2d(rel_src_frame_size.width * )
+
+        // cv::Size2d rel_src_frame_size(1,1);
+
+    //if(calcIntersectionAreaPart(ROI, bbox) >= intersectionAreaThreshold)
+    // cv::Size2d rel_dst_frame_size = 
+} // -- END putSrcMarkFrame2dstFrame_markRecalculation
+
 void Annotation::CheckValidAndAdaptation()
 {
     for(auto &slannot : data)
