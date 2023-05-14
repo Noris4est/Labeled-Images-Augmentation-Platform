@@ -84,4 +84,12 @@ struct LabledRelBbox
     }
 }; // rel - relative (rect2d)
 
+enum MeanType
+{
+    ARITHMETIC,
+    GEOMETRIC,
+    HARMONIC // Гармоническое
+};
+
+
 #endif //COMMONTYPES_HPP
