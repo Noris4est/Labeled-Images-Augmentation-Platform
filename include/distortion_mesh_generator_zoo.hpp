@@ -12,11 +12,10 @@
 namespace mesh_generator
 {
     cv::Mat createPrimeMesh(cv::Size frameSize, cv::Size meshGridSize); // meshGridSize - именно плиточки (полигоны)
-
     namespace various_others
     {
-        cv::Mat creatSqrtWarpMeshFromLeft2Right(cv::Mat &warpMesh, cv::Size frameSize, cv::Size meshGridSize); // meshGridSize - именно полигоны
-        cv::Mat creatSqrtWarpMeshFromTopLeft2BottomRight(cv::Mat &warpMesh, cv::Size frameSize, cv::Size meshGridSize); // meshGridSize - именно полигоны
+        void creatSqrtWarpMeshFromLeft2Right(const cv::Mat &srcMesh, cv::Mat &warpMesh);// meshGridSize - именно полигоны
+        void creatSqrtWarpMeshFromTopLeft2BottomRight(const cv::Mat &srcMesh, cv::Mat &warpMesh);// meshGridSize - именно полигоны
         cv::Mat createExpansionWarpMeshFromCenter2BordersSquare(cv::Mat &mesh, cv::Size frameSize, cv::Size meshGridSize); // meshGridSize - именно полигоны
         cv::Mat createExpansionWarpMeshFromCenter2BordersCircle(cv::Mat &mesh, cv::Size frameSize, cv::Size meshGridSize); // meshGridSize - именно полигоны
     }

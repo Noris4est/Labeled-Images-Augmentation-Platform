@@ -7,29 +7,31 @@ namespace mesh_generator::optical_distortion
 {
 
     void createDistortionWarpMesh(
-        const cv::Mat primeMesh_src, 
+        const cv::Mat &primeMesh_src, 
         cv::Mat &warpMesh_dst,
         cv::Size frameSize, 
-        cv::Size meshGridSize)
+        cv::Size meshGridSize,
+        OpticalDistortionSettings settings)
     {
 
         cv::Mat warpMesh_proxy = primeMesh_src.clone();
         int i_cur, j_cur, i_target, j_target;
         cv::Point p_tmp;
 
-        float k1 = -0.8;
-        float k2 = 0;
-        float k3 = 0;
-        float p1 = 0;
-        float p2 = 0;
+
+        float k1 = settings.k1; //-0.8
+        float k2 = settings.k2;
+        float k3 = settings.k3;
+        float p1 = settings.p1;
+        float p2 = settings.p2;
         
         float x_rel, y_rel, r_rel, xdist_rel, ydist_rel, multiplicator;
         int xdist, ydist;
         int halfwidth = frameSize.width / 2;
         int halfheight = frameSize.height / 2;
-        for(int i = 1; i < warpMesh_proxy.rows - 1; ++i) //обходим все вершины mesh
+        for(int i = 1; i < primeMesh_src.rows - 1; ++i) //обходим все вершины mesh
         {
-            for(int j = 1; j < warpMesh_proxy.cols - 1; ++j)
+            for(int j = 1; j < primeMesh_src.cols - 1; ++j)
             {
                 p_tmp = primeMesh_src.at<cv::Point2i>(i, j);
 

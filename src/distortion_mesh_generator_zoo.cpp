@@ -49,52 +49,70 @@ namespace mesh_generator
         Генерирует искаженную сетку изображения, имеющую характерное растяжения в левой части кадра,
         и сжатие в правой части кадра.
         */
-        cv::Mat creatSqrtWarpMeshFromLeft2Right(cv::Mat &warpMesh, cv::Size frameSize, cv::Size meshGridSize) // meshGridSize - именно полигоны
+        void creatSqrtWarpMeshFromLeft2Right(const cv::Mat &srcMesh, cv::Mat &warpMesh) // meshGridSize - именно полигоны, определяется автоматически
         {
+            assert(!srcMesh.empty());
+            assert(srcMesh.rows > 0 && srcMesh.cols > 0);
+            assert(srcMesh.type() == CV_32SC2); // cv::Point2i
+        
+            cv::Size meshGridSize = {srcMesh.cols - 1, srcMesh.rows - 1};
+            cv::Size frameSize = srcMesh.at<cv::Point2i>(meshGridSize.height, meshGridSize.width);
+            frameSize.width += 1;
+            frameSize.height += 1;
+
             // mesh содержит узлы полиномов, поэтому у него размерность w+1, h+1
-            cv::Mat primeMesh = createPrimeMesh(frameSize, meshGridSize);
-            warpMesh = primeMesh.clone();
+            cv::Mat warpMesh_proxy(srcMesh.size(), srcMesh.type());
             cv::Point p_tmp;
             int i_cur, j_cur, i_target, j_target;
-            for(int i = 0; i < warpMesh.rows; ++i) //обходим все вершины mesh
+
+            for(int i = 0; i < warpMesh_proxy.rows; ++i) //обходим все вершины mesh
             {
-                for(int j = 0; j < warpMesh.cols; ++j)
+                for(int j = 0; j < warpMesh_proxy.cols; ++j)
                 {
-                    p_tmp = primeMesh.at<cv::Point2i>(i, j);
+                    p_tmp = srcMesh.at<cv::Point2i>(i, j);
                     i_cur = p_tmp.y; // координаты исходной ноды
                     j_cur = p_tmp.x;
                     i_target = i_cur; // координаты итоговой ноды
-                    j_target = round( std::sqrt((frameSize.width) * j_cur) );
-                    warpMesh.at<cv::Point2i>(i, j) = {j_target, i_target};
+                    j_target = round(std::sqrt((frameSize.width) * j_cur) );
+                    warpMesh_proxy.at<cv::Point2i>(i, j) = {j_target, i_target};
                 }
             }
-            return primeMesh;
+            warpMesh = warpMesh_proxy;
         }
 
         /*
         Генерирует искаженную сетку изображения, имеющую характерное растяжения в левой верхней части кадра,
         и сжатие в правой нижней части кадра.
         */
-        cv::Mat creatSqrtWarpMeshFromTopLeft2BottomRight(cv::Mat &warpMesh, cv::Size frameSize, cv::Size meshGridSize) // meshGridSize - именно полигоны
+        void creatSqrtWarpMeshFromTopLeft2BottomRight(const cv::Mat &srcMesh, cv::Mat &warpMesh) // meshGridSize - именно полигоны
         {
+            assert(!srcMesh.empty());
+            assert(srcMesh.rows > 0 && srcMesh.cols > 0);
+            assert(srcMesh.type() == CV_32SC2); // cv::Point2i
+        
+            cv::Size meshGridSize = {srcMesh.cols - 1, srcMesh.rows - 1};
+            cv::Size frameSize = srcMesh.at<cv::Point2i>(meshGridSize.height, meshGridSize.width);
+            frameSize.width += 1;
+            frameSize.height +=1;
+
             // mesh содержит узлы полиномов, поэтому у него размерность w+1, h+1
-            cv::Mat primeMesh = createPrimeMesh(frameSize, meshGridSize);
-            warpMesh = primeMesh.clone();
+            cv::Mat warpMesh_proxy(srcMesh.size(), srcMesh.type());
             cv::Point p_tmp;
             int i_cur, j_cur, i_target, j_target;
-            for(int i = 0; i < warpMesh.rows; ++i) //обходим все вершины mesh
+
+            for(int i = 0; i < warpMesh_proxy.rows; ++i) //обходим все вершины mesh
             {
-                for(int j = 0; j < warpMesh.cols; ++j)
+                for(int j = 0; j < warpMesh_proxy.cols; ++j)
                 {
-                    p_tmp = primeMesh.at<cv::Point2i>(i, j);
+                    p_tmp = srcMesh.at<cv::Point2i>(i, j);
                     i_cur = p_tmp.y; // координаты исходной ноды
                     j_cur = p_tmp.x;
                     i_target = round( std::sqrt((frameSize.height) * i_cur) ); // координаты итоговой ноды
                     j_target = round( std::sqrt((frameSize.width) * j_cur) );
-                    warpMesh.at<cv::Point2i>(i, j) = {j_target, i_target};
+                    warpMesh_proxy.at<cv::Point2i>(i, j) = {j_target, i_target};
                 }
             }
-            return primeMesh;
+            warpMesh = warpMesh_proxy;
         }
 
         /*
