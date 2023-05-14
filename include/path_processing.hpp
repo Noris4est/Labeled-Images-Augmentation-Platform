@@ -17,6 +17,7 @@ struct DetailFilePath
     DetailFilePath(const std::string &fullFilePath);
 
     std::string to_full_path() const; // формирование полного пути
+    std::string to_basename() const;
     std::string to_path_without_ext() const; // формирование пути без расширения
     std::string dir = "";        // file dir
     std::string clear_name = ""; // name without extension

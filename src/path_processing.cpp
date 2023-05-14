@@ -60,6 +60,11 @@ std::string DetailFilePath::to_full_path() const
     return dir + "/" + clear_name + "." + extension;
 }
 
+std::string DetailFilePath::to_basename() const
+{
+    return clear_name + "." + extension;
+}
+
 std::string DetailFilePath::to_path_without_ext() const
 {
     return dir + "/" + clear_name;
