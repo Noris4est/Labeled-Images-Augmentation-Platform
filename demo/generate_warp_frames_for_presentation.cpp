@@ -13,14 +13,14 @@
 #include "path_processing.hpp"
 int main(int kargs, char* kwargs[])
 {
-    std::string results_save_dir = "../data/16_04_23/ex11";
+    std::string results_save_dir = "../data/16_04_23/ex19_new";
     if(!path_processing::isDirExist(results_save_dir))
     {
         path_processing::makePath(results_save_dir);
     }
     
     cv::Size workFrameSize = {800, 800};
-    cv::Size meshGridSize = {20,20};
+    cv::Size meshGridSize = {16, 16};
     cv::Size callbackMeshGridSize_x_axis = {16,1};
     cv::Size callbackMeshGridSize_y_axis = {1,16};
     
@@ -94,24 +94,45 @@ int main(int kargs, char* kwargs[])
     //     -M_PI/6,
     //     true);
     // createLongitudinalTiltWaveSinWarpMesh
-    mesh_generator::transverse::createTransverseSinWarpMesh_propX_changeY(
+
+    // mesh_generator::longitudinal::concentric_spherical_waves::createLongitudinalWaveGammaFromSourcePointConcentric(
+    //     srcMesh,
+    //     dstMesh,
+    //     workFrameSize,
+    //     meshGridSize,
+    //     source_wave_point,
+    //     gamma_coeff,
+    //     halfPeriodOfWaveDividedByMeshCellDiag);
+    // mesh_generator::optical_distortion::createDistortionWarpMesh(srcMesh, dstMesh, workFrameSize, meshGridSize);
+    // mesh_generator::various_others::creatSqrtWarpMeshFromLeft2Right(
+    //     dstMesh,
+    //     dstMesh);
+    // mesh_generator::transverse::createTransverseSinWarpMesh_propX_changeY(
+    //     dstMesh,
+    //     dstMesh,
+    //     workFrameSize,
+    //     meshGridSize, 
+    //     0.5);
+
+    mesh_generator::transverse::createTransverseSinWarpMesh_propXY_changeXY(
         srcMesh,
         dstMesh,
         workFrameSize,
         meshGridSize, 
-        0.5
-    );
+        1,
+        1);
 
     // mesh_generator::longitudinal::plane_waves::createLongitudinalTiltWaveGammaWarpMesh(
-        // srcMesh,
-        // dstMesh,
-        // workFrameSize,
-        // meshGridSize,
-        // 1.5,
-        // 4,
-        // mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
-        // 0,
-        // true);
+    //     srcMesh,
+    //     dstMesh,
+    //     workFrameSize,
+    //     meshGridSize,
+    //     1.5,
+    //     4,
+    //     mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
+    //     0,
+    //     true);
+
     // mesh_generator::longitudinal::plane_waves::createLongitudinalTiltWaveGammaWarpMesh(
     //     dstMesh,    
     //     dstMesh,
@@ -120,8 +141,51 @@ int main(int kargs, char* kwargs[])
     //     1.5,
     //     1.5,
     //     mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
-    //     M_PI/2,
+    //     M_PI / 2,
     //     true);
+
+
+    // mesh_generator::random_move::createRandomWarpMesh(srcMesh, dstMesh, workFrameSize, meshGridSize);
+    // mesh_generator::longitudinal::plane_waves::createLongitudinalTiltWaveSinWarpMesh(
+    //     srcMesh,
+    //     dstMesh,
+    //     workFrameSize,
+    //     meshGridSize,
+    //     2,
+    //     mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
+    //     M_PI/6);
+    // mesh_generator::longitudinal::plane_waves::createLongitudinalTiltWaveGammaWarpMesh(
+    //     srcMesh,
+    //     dstMesh,
+    //     workFrameSize,
+    //     meshGridSize,
+    //     1.5,
+    //     2.5,
+    //     mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisY,
+    //     0);
+
+    // mesh_generator::longitudinal::concentric_spherical_waves::createLongitudinalWaveGammaFromSourcePointConcentric(
+    //     srcMesh,
+    //     dstMesh,
+    //     workFrameSize,
+    //     meshGridSize,
+    //     {125,125},
+    //     1.25,
+    //     2.5);
+
+    // mesh_generator::longitudinal::concentric_spherical_waves::createLongitudinalWaveGammaFromSourcePointConcentric(
+    //     srcMesh,
+    //     dstMesh,
+    //     workFrameSize,
+    //     meshGridSize,
+    //     {100,100},
+    //     1.25,
+    //     2.5);
+    // mesh_generator::various_others::creatSqrtWarpMeshFromTopLeft2BottomRight(srcMesh, dstMesh);
+
+    mesh_generator::optical_distortion::OpticalDistortionSettings dist_settings;
+    dist_settings.k1 = -0.8;
+    mesh_generator::optical_distortion::createDistortionWarpMesh(dstMesh, dstMesh, workFrameSize, meshGridSize, dist_settings);
     // cv::Mat srcframe = cv::imread("../data/test_warp_frame_v5.png");
     cv::Mat srcframe = cv::imread("../data/test_warp_frame_v3.png");
     cv::resize(srcframe, srcframe, workFrameSize);
@@ -146,8 +210,8 @@ int main(int kargs, char* kwargs[])
 
     
     cv::imwrite(results_save_dir + "/transformMeshFrame.png", transformMeshFrame);
-    cv::imwrite(results_save_dir + "/images_result/srcMeshFrame.png", srcMeshFrame);
-    cv::imwrite(results_save_dir + "/images_result/dstMeshFrame.png", dstMeshFrame);
+    cv::imwrite(results_save_dir + "/srcMeshFrame.png", srcMeshFrame);
+    cv::imwrite(results_save_dir + "/dstMeshFrame.png", dstMeshFrame);
 
     cv::Mat warpgeomremap, warpperspective, warpaffine;
     MeshWarpApplicator wma(srcMesh, dstMesh);

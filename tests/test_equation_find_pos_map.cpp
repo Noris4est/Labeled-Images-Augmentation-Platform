@@ -24,7 +24,7 @@ cv::Scalar gray = cv::Scalar(128, 128, 128);
 int main(int kargs, char* kwargs[])
 {
     cv::Size workFrameSize = {800, 800};
-    cv::Size meshGridSize = {32,32};
+    cv::Size meshGridSize = {9,9};
     cv::Size callbackMeshGridSize_x_axis = {16,1};
     cv::Size callbackMeshGridSize_y_axis = {1,16};
 
@@ -104,8 +104,8 @@ int main(int kargs, char* kwargs[])
         dstMesh,
         workFrameSize,
         meshGridSize,
+        1.4,
         2,
-        1.5,
         mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
         -M_PI/3,
         true);
@@ -114,8 +114,8 @@ int main(int kargs, char* kwargs[])
         dstMesh,
         workFrameSize,
         meshGridSize,
+        1.4,
         2,
-        1.5,
         mesh_nodes_move::WaveCallbackMeshPropagationAxis::axisX,
         M_PI/6,
         true);

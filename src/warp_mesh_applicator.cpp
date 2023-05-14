@@ -3,6 +3,8 @@
 #include "polygon_processing.hpp"
 #include "affine_processing.hpp"
 #include "utils.hpp"
+#include "rect_processing.hpp"
+
 float calculate_relative_delta_EF(const std::vector<cv::Point> &poly, cv::Point point0, bool checkvalidpoly = true)
 {
     if(checkvalidpoly)
@@ -158,6 +160,11 @@ cv::Point transformCoordinatesPoint4nodePoly(const std::vector<cv::Point> polySr
     return Pintersect;
 }
 
+MeshWarpApplicator::MeshWarpApplicator()
+{
+    
+}
+
 MeshWarpApplicator::MeshWarpApplicator(const cv::Mat &srcMesh, const cv::Mat &dstMesh, bool instantPreprocessing)
 {
     this->srcMesh = srcMesh.clone();
@@ -183,6 +190,28 @@ MeshWarpApplicator::MeshWarpApplicator(const cv::Mat &srcMesh, const cv::Mat &ds
     {
         perprocessing3nodes();
     }
+}
+
+void MeshWarpApplicator::setSrcDstMesh(const cv::Mat &srcMesh, const cv::Mat &dstMesh, bool instantPreprocessing)
+{
+    this->srcMesh = srcMesh.clone();
+    this->dstMesh = dstMesh.clone();
+    this->framesize = framesize;
+    this->meshGridSize = meshGridSize;
+    if(instantPreprocessing)
+    {
+        perprocessing3nodes();
+    }
+}
+
+cv::Size MeshWarpApplicator::getMeshGridSize()
+{
+    return srcMesh.size();
+}
+
+const cv::Mat &MeshWarpApplicator::getWarpMesh()
+{
+    return dstMesh;
 }
 
 void MeshWarpApplicator::preprocessing()
@@ -224,15 +253,20 @@ void MeshWarpApplicator::preprocessing()
                 ++zeropixcounter;
         }
     }
-    std::cout << "Count zero pixels = " << zeropixcounter << std::endl;
+    //std::cout << "Count zero pixels = " << zeropixcounter << std::endl;
 
 
     uint16_t current_poly_id;
     int i_poly, j_poly;
     std::vector<cv::Point> polygon_dst_tmp, polygon_src_tmp;
     cv::Point pSrc;
-    map_x = cv::Mat(dst_frame_size, CV_32FC1);
-    map_y = cv::Mat(dst_frame_size, CV_32FC1);
+    map_x_inverse = cv::Mat(dst_frame_size, CV_32FC1);
+    map_y_inverse = cv::Mat(dst_frame_size, CV_32FC1);
+    map_x_direct = cv::Mat(dst_frame_size, CV_32FC1);
+    map_y_direct = cv::Mat(dst_frame_size, CV_32FC1);
+
+    // fill map_x_inverse, map_y_inverse
+    // scan dst_frame space
     for(int i = 0; i < framesize.height; ++i)
     {
         for(int j = 0; j < framesize.width; ++j)
@@ -242,16 +276,36 @@ void MeshWarpApplicator::preprocessing()
             //     std::cout << "Here!" << std::endl;
             // }
             current_poly_id = mapPolygonIds.at<ushort>(i,j);
+            
             i_poly = int((current_poly_id-1) / meshGridSize.width);
             j_poly = (current_poly_id-1) % meshGridSize.width;
             extractPolygon4(dstMesh, polygon_dst_tmp, {j_poly, i_poly});
             extractPolygon4(srcMesh, polygon_src_tmp, {j_poly, i_poly});
             pSrc = transformCoordinatesPoint4nodePoly(polygon_dst_tmp, polygon_src_tmp, {j,i});
-            map_x.at<float>(i, j) = pSrc.x;
-            map_y.at<float>(i, j) = pSrc.y;
+            map_x_inverse.at<float>(i, j) = pSrc.x;
+            map_y_inverse.at<float>(i, j) = pSrc.y;
         }
     }
 
+    //fill map_x_direct, map_y_direct
+    //scan src_frame space
+    int cell_height = framesize.height / meshGridSize.height;
+    int cell_width = framesize.width / meshGridSize.width;
+    cv::Point pDst;
+    for(int i = 0; i < framesize.height; ++i)
+    {
+        for(int j = 0; j < framesize.width; ++j)
+        {
+            i_poly = i / cell_height;
+            j_poly = j / cell_width;
+            extractPolygon4(dstMesh, polygon_dst_tmp, {j_poly, i_poly});
+            extractPolygon4(srcMesh, polygon_src_tmp, {j_poly, i_poly});
+            pDst = transformCoordinatesPoint4nodePoly(polygon_src_tmp, polygon_dst_tmp, {j,i});
+            map_x_direct.at<float>(i, j) = pDst.x;
+            map_y_direct.at<float>(i, j) = pDst.y;
+        }
+    }
+    is_preprocessed = true;
 }
 
 void MeshWarpApplicator::perprocessing3nodes()
@@ -287,8 +341,8 @@ void MeshWarpApplicator::perprocessing3nodes()
     int i_poly, j_poly;
     std::vector<cv::Point> polygon_dst_tmp, polygon_src_tmp;
     cv::Point pSrc;
-    map_x = cv::Mat(framesize, CV_32FC1);
-    map_y = cv::Mat(framesize, CV_32FC1);
+    map_x_inverse = cv::Mat(framesize, CV_32FC1);
+    map_y_inverse = cv::Mat(framesize, CV_32FC1);
 
     std::vector<cv::Mat> affineMatrixVec;
 
@@ -320,15 +374,97 @@ void MeshWarpApplicator::perprocessing3nodes()
             pSrc = warpAffine2Point<cv::Point2i>(cv::Point(j,i), affineMatrixVec[current_poly_id - 1]);
             // cv::perspectiveTransform({j,i}, pSrc, affineMatrixVec[current_poly_id - 1]);
             //pSrc = transformCoordinatesPoint4nodePoly(polygon_dst_tmp, polygon_src_tmp, {j,i});
-            map_x.at<float>(i, j) = pSrc.x;
-            map_y.at<float>(i, j) = pSrc.y;
+            map_x_inverse.at<float>(i, j) = pSrc.x;
+            map_y_inverse.at<float>(i, j) = pSrc.y;
         }
     }
 }
 
 void MeshWarpApplicator::apply(const cv::Mat &src, cv::Mat &dst) const
 {
-
-    cv::remap(src, dst, map_x, map_y, cv::InterpolationFlags::INTER_CUBIC);
+    assert(is_preprocessed);
+    assert(!src.empty());
+    cv::Mat src_resized;
+    if(src.size() != dst_frame_size)
+    {
+        cv::resize(src, src_resized, dst_frame_size, 0, 0, cv::InterpolationFlags::INTER_CUBIC);
+    }
+    else
+    {
+        src_resized = src;
+    }
+    cv::remap(src_resized, dst, map_x_inverse, map_y_inverse, cv::InterpolationFlags::INTER_CUBIC);
 }
 
+void MeshWarpApplicator::apply(const MarkedFrame &src, MarkedFrame &dst) const
+{
+    assert(is_preprocessed);
+    assert(!src.isFrameEmpty());
+    
+    MarkedFrame src_adapted;
+    src_adapted.set_frame(src.getFrameRef());
+    src_adapted.set_annotation(src.getAnnotRef());
+
+    if(src.size() != dst_frame_size)
+    {
+        src_adapted.resize(dst_frame_size);
+    }
+
+    cv::remap(src_adapted.getFrameRef(), dst.getFrameRef(), map_x_inverse, map_y_inverse, cv::InterpolationFlags::INTER_CUBIC);
+
+    const annotation::Annotation &annot_src = src_adapted.getAnnotRef();
+    annotation::Annotation &annot_dst = dst.getAnnotRef();
+    const cv::Mat &frame_src = src_adapted.getFrameRef();
+    cv::Size src_frame_size = frame_src.size();
+    cv::Rect2i bbox2i, bbox2i_dst;
+    annotation::SingleLineAnnotation sl_annot;
+    std::vector<cv::Point2i> bbox_pts, bbox_pts_dst;
+    cv::Point p_dst;
+    cv::Rect2d bbox2d_dst;
+    annot_dst.clear();
+    for(int i = 0; i < annot_src.size(); ++i)
+    {
+        sl_annot = annot_src[i];
+        bbox2i = sl_annot.to_rect_2i(src_frame_size);
+        getRectPoints(bbox2i, bbox_pts, true);
+        bbox_pts_dst.clear();
+        for(cv::Point p_tmp : bbox_pts)
+        {
+            p_dst.x = map_x_direct.at<float>(p_tmp.y, p_tmp.x);
+            p_dst.y = map_y_direct.at<float>(p_tmp.y, p_tmp.x);
+            bbox_pts_dst.push_back(p_dst);
+        }
+        bbox2i_dst = cv::boundingRect(bbox_pts_dst);
+        bbox2d_dst = getRelRectFromAbs(bbox2i_dst, frame_src.size());
+        sl_annot.set_rect(bbox2d_dst);
+        annot_dst.push_back(sl_annot);
+    }
+}
+
+bool MeshWarpApplicator::checkValidMesh(const cv::Mat mesh)
+{
+    if(mesh.empty())
+    {
+        return false;
+    }
+    if(mesh.cols < 1 && mesh.rows < 1)
+    {
+        return false;
+    }
+    cv::Size meshGridSize = {mesh.cols - 1, mesh.rows - 1};
+
+    std::vector<cv::Point> polygon_tmp;
+    for(int i = 0; i < meshGridSize.height; ++i)
+    {
+        for(int j = 0; j < meshGridSize.width; ++j)
+        {
+            extractPolygon4(mesh, polygon_tmp, {j,i});
+            // Проверить полигон на валидность, должен быть выпуклым
+            if(!isConvexPolygon(polygon_tmp, true, false))
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}

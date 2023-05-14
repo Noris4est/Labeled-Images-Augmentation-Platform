@@ -1,6 +1,8 @@
 
 #include "utils.hpp"
 #include "draw_custom_line.hpp"
+#include "rect_processing.hpp"
+#include "txt_files_processing.hpp"
 
 void getAllPolygonPoints(const std::vector<cv::Point2f> &polygon, std::vector<cv::Point2f> &includedPoints)
 {
@@ -227,6 +229,57 @@ void drawMesh(cv::Mat &frame, const cv::Mat &mesh, cv::Scalar color, bool draw_e
             }
         }   
     }
+}
+
+void drawAnnot(
+    cv::Mat &frame, 
+    const annotation::Annotation &annot, 
+    cv::Scalar color, 
+    double font_scale, 
+    const std::string &path2classNames)
+{
+    annotation::SingleLineAnnotation sl_annot;
+    cv::Rect bbox2i;
+    int cl_id;
+    bool is_draw_names = false;
+    std::vector<std::string> class_names;
+    if(path2classNames == "")
+    {
+        bool is_draw_names = true;
+        readTxtLineByLine(path2classNames, class_names);
+    }
+
+    std::function<std::string(int)> getClassIdOrLabel;
+    if(is_draw_names)
+    {
+        getClassIdOrLabel = [&class_names](int cl_id){
+            return class_names[cl_id];
+        };
+    }
+    else
+    {
+        getClassIdOrLabel = [](int cl_id){
+            return std::to_string(cl_id);
+        };
+    }
+    cv::Point tl_corner_text;
+    // draw bbox vector and class_names / class_id's
+    for(int i = 0; i < annot.size(); ++i)
+    {
+        sl_annot = annot[i];
+        bbox2i = getAbsRectFromRel(sl_annot.get_rect(), frame.size());
+        cl_id = annot[i].get_class_id();
+        cv::rectangle(frame, bbox2i, color, 1, cv::LineTypes::LINE_AA);
+        tl_corner_text = bbox2i.tl();
+        tl_corner_text.x += 5;
+        tl_corner_text.y += 5;
+        cv::putText(frame, getClassIdOrLabel(cl_id), tl_corner_text, cv::HersheyFonts::FONT_HERSHEY_COMPLEX, font_scale, color, 1, cv::LineTypes::LINE_AA);
+    }
+}
+
+void drawAnnot(MarkedFrame &m_frame, cv::Scalar color, double font_scale, const std::string &path2classNames)
+{
+    drawAnnot(m_frame.getFrameRef(), m_frame.getAnnotRef(), color, font_scale, path2classNames);
 }
 
 void drawMesh3nodes(cv::Mat &frame, const cv::Mat &mesh, cv::Scalar color, bool draw_edges, int linestyle)

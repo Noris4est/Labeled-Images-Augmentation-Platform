@@ -4,6 +4,8 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include "draw_custom_line.hpp"
+#include "marked_frame.hpp"
+#include "colors.hpp"
 
 void getAllPolygonPoints(const std::vector<cv::Point2f> &polygon, std::vector<cv::Point2f> &includedPoints);
 
@@ -37,6 +39,20 @@ void drawMeshTransform(
     int warpNodesRadius = 3);
 
 void drawMesh(cv::Mat &frame, const cv::Mat &mesh, cv::Scalar color, bool draw_edges = false, int linestyle = cv::LineStyles::SOLID);
+
+void drawAnnot(
+    cv::Mat &frame, 
+    const annotation::Annotation &annot, 
+    cv::Scalar color = colors::red, 
+    double font_scale = 0.7, 
+    const std::string &path2classNames = "");
+
+void drawAnnot(
+    MarkedFrame &m_frame,
+    cv::Scalar color = colors::red, 
+    double font_scale = 0.7, 
+    const std::string &path2classNames = "");
+
 void drawMesh3nodes(cv::Mat &frame, const cv::Mat &mesh, cv::Scalar color, bool draw_edges = false, int linestyle = cv::LineStyles::SOLID);
 
 void convertfromAffine2perspectiveMatrix(const cv::Mat &src_affineMat, cv::Mat &dst_perspectiveMat);
