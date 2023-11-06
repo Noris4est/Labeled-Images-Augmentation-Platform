@@ -1,4 +1,5 @@
 #include "cell_mover_mesh_grid_nodes_callback.hpp"
+#include  <stdexcept>
 
 mesh_nodes_move::CellMoverMeshGridNodesCallback::CellMoverMeshGridNodesCallback(const std::function<double(double)> callback)
 {
