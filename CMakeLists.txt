@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(COMPILE_TESTS 1)
 set(COMPILE_DEMOS 1)
-set(OpenCV_DIR /home/vitaly/opencv/install_4_5_2_contrib)
+set(OpenCV_DIR /home/vitaly/opencv/install_4_5_2_contrib_cuda)
 find_package(OpenCV REQUIRED PATHS ${OpenCV_DIR} NO_DEFAULT_PATH)
 
 file(GLOB SOURCES src/*.cpp)
